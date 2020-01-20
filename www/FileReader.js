@@ -295,4 +295,32 @@ FileReader.prototype.readAsArrayBuffer = function (file) {
     }.bind(this));
 };
 
+/**
+ * Read a chunk of file and return only the data of the chunk as a binary data.
+ *
+ * @param file          {File} File object containing file properties
+ */
+FileReader.prototype.readChunkedAsArrayBuffer = function(file) {
+    if (initRead(this, file)) {
+        return this._realReader.readAsArrayBuffer(file);
+    }
+
+    let totalSize = file.end - file.start;
+
+    readSuccessCallback.bind(this)('readAsArrayBuffer', null, file.start, totalSize, function(r) {
+        let resultArray;
+
+        let newSize = FileReader.READ_CHUNK_SIZE;
+        if ((totalSize - this._progress) < FileReader.READ_CHUNK_SIZE) {
+            newSize = (totalSize - this._progress);
+        }
+        resultArray = new Uint8Array(newSize);
+        resultArray.set(new Uint8Array(r), 0);
+        r = '';
+        this._result = resultArray.buffer;
+        resultArray.buffer = '';
+        resultArray = '';
+    }.bind(this));
+};
+
 module.exports = FileReader;
